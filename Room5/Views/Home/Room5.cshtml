@@ -1,0 +1,435 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Room 5 - Space Invaders</title>
+
+    <style>
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                background: black;
+                overflow: hidden;
+                font-family: Arial, sans-serif;
+                color: white;
+            }
+
+            canvas {
+                display: block;
+                margin: 0 auto;
+                background: #050505;
+                border: 2px solid #444;
+            }
+
+            #hud {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                font-size: 20px;
+                z-index: 10;
+            }
+
+            #overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .95);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 100;
+            }
+
+            button {
+                padding: 12px 24px;
+                font-size: 20px;
+                cursor: pointer;
+            }
+
+            h1 {
+                margin-bottom: 20px;
+            }
+    </style>
+</head>
+
+<body>
+
+    <div id="hud">
+        <div>
+            <strong>Controls</strong><br>
+            A / D = Move<br>
+            SPACE = Shoot<br>
+            R = Restart after death
+            <hr>
+        </div>
+
+        Time Left:
+        <span id="timer">05:00</span>
+
+        <br>
+
+        Score:
+        <span id="score">0</span>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="650"></canvas>
+
+    <div id="overlay">
+        <h1>Room 5 - Space Invaders</h1>
+
+        <p>
+            Destroy all alien ships to escape.
+        </p>
+
+        <p>
+            Controls:
+        </p>
+
+        <ul style="text-align:left;">
+            <li>A / D = Move</li>
+            <li>SPACE = Shoot</li>
+            <li>R = Restart after Game Over</li>
+        </ul>
+
+        <p>
+            Eliminate every enemy to complete Room 5.
+        </p>
+
+        <button id="startButton">Start Game</button>
+    </div>
+
+    <script>
+
+            const START_PAGE_URL = "https://STARTPAGE.runasp.net/";
+
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+
+            const timerText = document.getElementById("timer");
+            const scoreText = document.getElementById("score");
+
+            let gameRunning = false;
+            let gameOverState = false;
+
+            let score = 0;
+            let startTimestamp = 0;
+
+            const keys = {};
+
+            const player = {
+                x: 475,
+                y: 590,
+                width: 50,
+                height: 20,
+                speed: 7
+            };
+
+            const bullets = [];
+            const enemies = [];
+            const enemyBullets = [];
+
+            let enemyDirection = 1;
+            let lastShot = 0;
+
+            function createWave() {
+
+                enemies.length = 0;
+
+                for (let row = 0; row < 5; row++) {
+                    for (let col = 0; col < 10; col++) {
+
+                        enemies.push({
+                            x: 80 + col * 80,
+                            y: 50 + row * 50,
+                            width: 40,
+                            height: 25,
+                            alive: true
+                        });
+
+                    }
+                }
+            }
+
+            createWave();
+
+            document.addEventListener("keydown", e => {
+                keys[e.key] = true;
+            });
+
+            document.addEventListener("keyup", e => {
+                keys[e.key] = false;
+            });
+
+            // Press R to restart after Game Over
+            document.addEventListener("keydown", function (e) {
+
+                if (!gameRunning &&
+                    (e.key === "r" || e.key === "R")) {
+
+                    location.reload();
+                }
+
+            });
+
+            function collide(a, b) {
+
+                return a.x < b.x + b.width &&
+                    a.x + a.width > b.x &&
+                    a.y < b.y + b.height &&
+                    a.y + a.height > b.y;
+            }
+
+            function shoot() {
+
+                bullets.push({
+                    x: player.x + player.width / 2 - 2,
+                    y: player.y,
+                    width: 4,
+                    height: 10
+                });
+            }
+
+            document.getElementById("startButton").addEventListener("click", function () {
+
+                var t = new URLSearchParams(window.location.search).get("t");
+
+                if (!t) {
+                    t = Date.now();
+
+                    history.replaceState(
+                        {},
+                        "",
+                        window.location.pathname + "?t=" + t
+                    );
+                }
+
+                startTimestamp = parseInt(t);
+
+                document.getElementById("overlay").style.display = "none";
+
+                gameRunning = true;
+
+                requestAnimationFrame(gameLoop);
+            });
+
+            function update() {
+
+                if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
+                    player.x -= player.speed;
+                }
+
+                if (keys["ArrowRight"] || keys["d"] || keys["D"]) {
+                    player.x += player.speed;
+                }
+
+                player.x = Math.max(
+                    0,
+                    Math.min(canvas.width - player.width, player.x)
+                );
+
+                if (keys[" "] && Date.now() - lastShot > 250) {
+                    shoot();
+                    lastShot = Date.now();
+                }
+
+                bullets.forEach(b => b.y -= 10);
+
+                let moveDown = false;
+
+                enemies.forEach(enemy => {
+
+                    if (!enemy.alive) return;
+
+                    enemy.x += enemyDirection;
+
+                    if (enemy.x < 0 ||
+                        enemy.x + enemy.width > canvas.width) {
+
+                        moveDown = true;
+                    }
+                });
+
+                if (moveDown) {
+
+                    enemyDirection *= -1;
+
+                    enemies.forEach(enemy => {
+                        enemy.y += 20;
+                    });
+                }
+
+                if (Math.random() < 0.025) {
+
+                    const aliveEnemies = enemies.filter(e => e.alive);
+
+                    if (aliveEnemies.length > 0) {
+
+                        const shooter =
+                            aliveEnemies[
+                            Math.floor(Math.random() * aliveEnemies.length)
+                            ];
+
+                        enemyBullets.push({
+                            x: shooter.x + 18,
+                            y: shooter.y + 20,
+                            width: 4,
+                            height: 10
+                        });
+                    }
+                }
+
+                enemyBullets.forEach(b => b.y += 5);
+
+                bullets.forEach((bullet, index) => {
+
+                    enemies.forEach(enemy => {
+
+                        if (enemy.alive && collide(bullet, enemy)) {
+
+                            enemy.alive = false;
+
+                            bullets.splice(index, 1);
+
+                            score += 10;
+
+                            scoreText.textContent = score;
+                        }
+                    });
+                });
+
+                enemyBullets.forEach(bullet => {
+
+                    if (collide(bullet, player)) {
+                        gameOver();
+                    }
+                });
+
+                enemies.forEach(enemy => {
+
+                    if (enemy.alive &&
+                        enemy.y + enemy.height >= player.y) {
+
+                        gameOver();
+                    }
+                });
+
+                if (enemies.every(e => !e.alive)) {
+                    victory();
+                }
+
+                const elapsed =
+                    Math.floor(
+                        (Date.now() - startTimestamp) / 1000
+                    );
+
+                const remaining = 300 - elapsed;
+
+                const mins = Math.max(0, Math.floor(remaining / 60));
+                const secs = Math.max(0, remaining % 60);
+
+                timerText.textContent =
+                    mins.toString().padStart(2, "0") +
+                    ":" +
+                    secs.toString().padStart(2, "0");
+
+                if (remaining <= 0) {
+                    victory();
+                }
+            }
+
+            function draw() {
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = "lime";
+                ctx.fillRect(
+                    player.x,
+                    player.y,
+                    player.width,
+                    player.height
+                );
+
+                ctx.fillStyle = "white";
+
+                bullets.forEach(b => {
+
+                    ctx.fillRect(
+                        b.x,
+                        b.y,
+                        b.width,
+                        b.height
+                    );
+                });
+
+                ctx.fillStyle = "red";
+
+                enemyBullets.forEach(b => {
+
+                    ctx.fillRect(
+                        b.x,
+                        b.y,
+                        b.width,
+                        b.height
+                    );
+                });
+
+                ctx.fillStyle = "cyan";
+
+                enemies.forEach(enemy => {
+
+                    if (!enemy.alive) return;
+
+                    ctx.fillRect(
+                        enemy.x,
+                        enemy.y,
+                        enemy.width,
+                        enemy.height
+                    );
+                });
+            }
+
+            function gameLoop() {
+
+                if (!gameRunning) return;
+
+                update();
+                draw();
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            function gameOver() {
+
+                gameRunning = false;
+                gameOverState = true;
+
+                const overlay = document.getElementById("overlay");
+
+                overlay.innerHTML =
+                    "<h1>Game Over</h1>" +
+                    "<button onclick='location.reload()'>Retry</button>";
+
+                overlay.style.display = "flex";
+            }
+
+            function victory() {
+
+                gameRunning = false;
+
+                var t = new URLSearchParams(window.location.search).get("t");
+
+                window.location.href =
+                    START_PAGE_URL + "?t=" + t;
+            }
+
+    </script>
+
+</body>
+
+</html>
