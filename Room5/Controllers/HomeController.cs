@@ -21,6 +21,12 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Slutsida(string t)
+    {
+        ViewBag.EscapeTime = string.IsNullOrEmpty(t) ? "unknown" : t;
+        return View();
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
