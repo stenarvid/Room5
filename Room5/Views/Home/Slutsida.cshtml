@@ -1,10 +1,175 @@
 @{
     ViewData["Title"] = "Slutsida";
+    Layout = null; // Denna rad tar bort standardmenyn och footern!
 }
 
-<h1>Grattis!</h1>
-<p>Du rymde på:</p>
-<p><strong id="escapeTimeValue">@ViewBag.EscapeTime</strong></p>
+<div class="space-container">
+    <div class="ufo-glow"></div>
+    ...
+    <div class="alien-panel">
+        <h1 class="space-title">MISSION ACCOMPLISHED</h1>
+        <p class="space-text">Du lyckades rymma från utomjordingarna på:</p>
+        <div class="timer-wrapper">
+            <span class="glitch-preset">🛸 TIMELINE:</span>
+            <p><strong id="escapeTimeValue">@ViewBag.EscapeTime</strong></p>
+        </div>
+
+        <a href="http://room1.runasp.net/" class="play-again-btn">SPELA IGEN</a>
+
+        <small class="alien-hud">SYSTEM STATUS: HUMAN_ESCAPE_DETECTED // 100%</small>
+    </div>
+</div>
+
+<style>
+    /* Importera en rymdig sci-fi font - Ändrat till @@import för att inte krocka med Razor */
+    @@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+    /* NYTT: Tvinga bakgrunden att täcka ALLT och ta bort alla vita marginaler */
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #05050c;
+        width: 100%;
+        height: 100%;
+    }
+
+    .space-container {
+        background-color: #05050c;
+        background-image:
+            radial-gradient(white, rgba(255, 255, 255, .2) 2px, transparent 40px),
+            radial-gradient(white, rgba(255, 255, 255, .15) 1px, transparent 30px),
+            radial-gradient(white, rgba(255, 255, 255, .1) 2px, transparent 40px);
+        background-size: 550px 550px, 350px 350px, 250px 250px;
+        background-position: 0 0, 40px 60px, 130px 270px;
+        font-family: 'Orbitron', sans-serif;
+
+        /* ÄNDRAD från 80vh till 100vh för att garantera full höjd */
+        min-height: 100vh;
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: #ffffff;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* Det pulserande ufo-ljuset i bakgrunden */
+    .ufo-glow {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(0, 255, 136, 0.15) 0%, transparent 70%);
+        top: 20%;
+        animation: pulseGlow 4s infinite ease-in-out;
+        z-index: 1;
+    }
+
+    .alien-panel {
+        background: rgba(10, 10, 25, 0.75);
+        border: 2px solid #00ff88;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 15px rgba(0, 255, 136, 0.1);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        max-width: 500px;
+        width: 90%;
+        z-index: 2;
+    }
+
+    .space-title {
+        color: #00ff88;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+        margin-bottom: 20px;
+        font-size: 2.2rem;
+    }
+
+    .space-text {
+        color: #a0a0c0;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+
+    .timer-wrapper {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px dashed rgba(0, 255, 136, 0.5);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 35px;
+        /* Lite extra marginal ner till knappen */
+    }
+
+    .glitch-preset {
+        font-size: 0.8rem;
+        color: #00e1ff;
+        letter-spacing: 2px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    #escapeTimeValue {
+        font-size: 3.5rem;
+        color: #33ff99;
+        text-shadow: 0 0 15px rgba(51, 255, 153, 0.8), 0 0 30px rgba(51, 255, 153, 0.4);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* NY STAJLING FÖR SPELA IGEN-KNAPPEN */
+    .play-again-btn {
+        display: inline-block;
+        background: transparent;
+        color: #00e1ff;
+        border: 2px solid #00e1ff;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 30px;
+        box-shadow: 0 0 10px rgba(0, 225, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .play-again-btn:hover {
+        background: #00e1ff;
+        color: #05050c;
+        box-shadow: 0 0 20px rgba(0, 225, 255, 0.6);
+        transform: translateY(-2px);
+    }
+
+    .play-again-btn:active {
+        transform: translateY(1px);
+    }
+
+    .alien-hud {
+        font-size: 0.7rem;
+        color: rgba(0, 255, 136, 0.5);
+        letter-spacing: 1px;
+        display: block;
+    }
+
+    @@keyframes pulseGlow {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
+
+        50% {
+            transform: scale(1.3);
+            opacity: 1;
+        }
+    }
+</style>
 
 <script>
     const el = document.getElementById("escapeTimeValue");
@@ -13,20 +178,13 @@
     if (rawValue === "unknown" || isNaN(rawValue)) {
         el.textContent = "Unknown";
     } else {
-        // Eftersom 't' redan är millisekunder (t.ex. 1781685982676), gör vi bara om strängen till ett tal direkt
         const startMs = parseInt(rawValue, 10);
-
-        // Räkna ut hur många millisekunder som har gått fram tills NU
         const elapsedMs = Date.now() - startMs;
-
-        // Gör om till sekunder (och använd Math.abs ifall klockan skulle diffa med någon millisekund)
         const totalSeconds = Math.floor(Math.abs(elapsedMs) / 1000);
 
-        // Räkna ut minuter och sekunder
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
 
-        // Skriv ut det snyggt (t.ex. 4:05)
         el.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
     }
 </script>
