@@ -23,7 +23,6 @@
                 height: 100%;
             }
 
-            /* Centrerar och skalar spelet i en snygg container */
             #game-container {
                 position: relative;
                 width: 100%;
@@ -43,7 +42,6 @@
                 box-sizing: border-box;
             }
 
-            /* Mobilvänlig och responsiv HUD överst */
             #hud {
                 width: 100%;
                 box-sizing: border-box;
@@ -92,18 +90,6 @@
             body {
                 touch-action: none;
             }
-
-            /* Responsiva justeringar för mobiler */
-            @@media (max-width: 900px) {
-                #hud .controls-info {
-                    display: none;
-                    /* Dölj tangentbordsinfo på mobilen */
-                }
-
-                #hud {
-                    font-size: 15px;
-                }
-            }
     </style>
 </head>
 
@@ -111,7 +97,7 @@
 
     <div id="game-container">
         <div id="hud">
-            <div class="controls-info">
+            <div id="controlsInfo" class="controls-info">
                 <strong>Controls:</strong> A/D = Move | SPACE = Shoot
             </div>
             <div>Time: <span id="timer">05:00</span></div>
@@ -147,7 +133,6 @@
 
             let score = 0;
             let startTimestamp = 0;
-
             let autoShoot = false;
 
             const keys = {};
@@ -195,6 +180,12 @@
 
             if (isTouchDevice) {
                 document.getElementById("mobileInstructions").style.display = "block";
+
+                if (window.innerWidth <= 900) {
+                    const ctrlInfo = document.getElementById("controlsInfo");
+                    if (ctrlInfo) ctrlInfo.style.display = "none";
+                    document.getElementById("hud").style.fontSize = "15px";
+                }
             }
 
             canvas.addEventListener("touchmove", e => {
@@ -237,13 +228,15 @@
 
             document.getElementById("startButton").addEventListener("click", function () {
                 let t = new URLSearchParams(window.location.search).get("t");
+                let parsedTime = t ? parseInt(t, 10) : 0;
 
-                if (!t) {
+                if (!t || isNaN(parsedTime) || (Date.now() - parsedTime) / 1000 >= 300) {
                     t = Date.now().toString();
+                    parsedTime = parseInt(t, 10);
                     history.replaceState({}, "", window.location.pathname + "?t=" + t);
                 }
 
-                startTimestamp = parseInt(t, 10);
+                startTimestamp = parsedTime;
                 autoShoot = false;
 
                 document.getElementById("overlay").style.display = "none";
@@ -297,7 +290,6 @@
 
                 enemyBullets.forEach(b => b.y += 5);
 
-                // FIX: Säker kollisionshantering som stoppar loopen så fort ett skott träffar
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     for (let j = 0; j < enemies.length; j++) {
                         if (enemies[j].alive && collide(bullets[i], enemies[j])) {
@@ -305,7 +297,7 @@
                             bullets.splice(i, 1);
                             score += 10;
                             scoreText.textContent = score;
-                            break; // Avbryt inre loopen, detta skott är förbrukat!
+                            break;
                         }
                     }
                 }
