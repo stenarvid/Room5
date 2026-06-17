@@ -89,54 +89,6 @@
                 margin-bottom: 20px;
             }
 
-            /* Ergonomiska, transparenta och stora touchknappar för tummarna */
-            #mobileControls {
-                display: none;
-                position: fixed;
-                bottom: 30px;
-                left: 0;
-                width: 100%;
-                padding: 0 20px;
-                box-sizing: border-box;
-                justify-content: space-between;
-                align-items: center;
-                z-index: 200;
-                pointer-events: none;
-                /* Låter touch passera utanför knapparna */
-            }
-
-            .nav-buttons {
-                display: flex;
-                gap: 15px;
-                pointer-events: auto;
-            }
-
-            .action-buttons {
-                pointer-events: auto;
-            }
-
-            #mobileControls button {
-                width: 75px;
-                height: 75px;
-                font-size: 28px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.15);
-                color: white;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                backdrop-filter: blur(4px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                -webkit-user-select: none;
-                user-select: none;
-            }
-
-            /* Visar visuell feedback när man trycker på touchknapparna */
-            #mobileControls button:active {
-                background: rgba(0, 255, 136, 0.4);
-                border-color: #00ff88;
-            }
-
             body {
                 touch-action: none;
             }
@@ -150,10 +102,6 @@
 
                 #hud {
                     font-size: 15px;
-                }
-
-                #mobileControls {
-                    display: flex;
                 }
             }
     </style>
@@ -173,23 +121,13 @@
         <canvas id="gameCanvas" width="1000" height="650"></canvas>
     </div>
 
-    <div id="mobileControls">
-        <div class="nav-buttons">
-            <button id="leftBtn">◀</button>
-            <button id="rightBtn">▶</button>
-        </div>
-        <div class="action-buttons">
-            <button id="shootBtn">🔥</button>
-        </div>
-    </div>
-
     <div id="overlay">
         <h1>Room 5 - Space Invaders</h1>
         <p>Destroy all alien ships to escape.</p>
 
         <div id="mobileInstructions" style="display:none;">
             <h3>Mobilkontroller</h3>
-            <p>Använd knapparna i nedre hörnen för att styra och skjuta, eller dra fingret över skärmen.</p>
+            <p>Dra fingret över skärmen för att styra skeppet. Det skjuter automatiskt.</p>
         </div>
 
         <button id="startButton">Start Game</button>
@@ -209,6 +147,9 @@
 
             let score = 0;
             let startTimestamp = 0;
+
+            // Sätts till true när spelaren börjar dra fingret på skärmen (auto-skjut på mobil)
+            let autoShoot = false;
 
             const keys = {};
 
@@ -248,45 +189,15 @@
             document.addEventListener("keydown", e => { keys[e.key] = true; });
             document.addEventListener("keyup", e => { keys[e.key] = false; });
 
-            const leftBtn = document.getElementById("leftBtn");
-            const rightBtn = document.getElementById("rightBtn");
-            const shootBtn = document.getElementById("shootBtn");
-
             const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
             if (isTouchDevice) {
                 document.getElementById("mobileInstructions").style.display = "block";
-                document.getElementById("mobileControls").style.display = "flex";
             }
 
-            function bindHold(button, key) {
-                button.addEventListener("touchstart", e => {
-                    e.preventDefault();
-                    keys[key] = true;
-                });
-                button.addEventListener("touchend", e => {
-                    e.preventDefault();
-                    keys[key] = false;
-                });
-                button.addEventListener("touchcancel", e => {
-                    e.preventDefault();
-                    keys[key] = false;
-                });
-            }
-
-            bindHold(leftBtn, "a");
-            bindHold(rightBtn, "d");
-
-            shootBtn.addEventListener("touchstart", e => {
-                e.preventDefault();
-                if (Date.now() - lastShot > 250) {
-                    shoot();
-                    lastShot = Date.now();
-                }
-            });
-
-            // Dra fingret på skärmen för att styra skeppet
+            // Dra fingret på skärmen för att styra skeppet (och starta auto-skjut)
             canvas.addEventListener("touchmove", e => {
+                autoShoot = true;
                 const rect = canvas.getBoundingClientRect();
                 const touchX = e.touches[0].clientX - rect.left;
                 player.x = (touchX / rect.width) * canvas.width - player.width / 2;
@@ -348,7 +259,8 @@
 
                 player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
 
-                if (keys[" "] && Date.now() - lastShot > 250) {
+                // Skjut med mellanslag, eller automatiskt när spelaren börjat röra skeppet på mobil
+                if ((keys[" "] || autoShoot) && Date.now() - lastShot > 250) {
                     shoot();
                     lastShot = Date.now();
                 }
