@@ -20,6 +20,9 @@
     </div>
 </div>
 
+<!-- LJUD: lägg din wav-fil i wwwroot/sounds/ och döp den till victory.wav -->
+<audio id="victorySound" src="/sounds/victory.wav" preload="auto"></audio>
+
 <style>
     /* Importera en rymdig sci-fi font - Ändrat till @@import för att inte krocka med Razor */
     @@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
@@ -171,6 +174,9 @@
     }
 </style>
 
+<!-- Konfetti-bibliotek från CDN -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
 <script>
     const el = document.getElementById("escapeTimeValue");
     const rawValue = el.textContent.trim();
@@ -187,4 +193,51 @@
 
         el.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
     }
+
+    // Konfetti: en skur från båda sidorna i rymdfärger
+    function firaMedKonfetti() {
+        const slut = Date.now() + 3000;
+        const färger = ["#00ff88", "#33ff99", "#00e1ff", "#ffffff"];
+
+        (function ram() {
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: färger
+            });
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: färger
+            });
+            if (Date.now() < slut) {
+                requestAnimationFrame(ram);
+            }
+        })();
+    }
+
+    // Ljud: försök spela direkt. Om webbläsaren blockerar (autoplay-regler),
+    // spela vid första klick/tryck/tangenttryckning istället.
+    const ljud = document.getElementById("victorySound");
+
+    function spelaLjud() {
+        ljud.play().catch(() => { /* blockerat, fallback nedan sköter det */ });
+    }
+
+    firaMedKonfetti();
+    spelaLjud();
+
+    function fallback() {
+        spelaLjud();
+        document.removeEventListener("click", fallback);
+        document.removeEventListener("touchstart", fallback);
+        document.removeEventListener("keydown", fallback);
+    }
+    document.addEventListener("click", fallback);
+    document.addEventListener("touchstart", fallback);
+    document.addEventListener("keydown", fallback);
 </script>
