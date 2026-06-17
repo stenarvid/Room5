@@ -2,19 +2,31 @@
     ViewData["Title"] = "Slutsida";
 }
 
-<h1>Congratulations</h1>
-<p>Your escape time is:</p>
+<h1>Grattis!</h1>
+<p>Du rymde på:</p>
 <p><strong id="escapeTimeValue">@ViewBag.EscapeTime</strong></p>
 
 <script>
     const el = document.getElementById("escapeTimeValue");
-    const startMs = parseInt(el.textContent.trim(), 10);
+    const rawValue = el.textContent.trim();
 
-    const elapsedMs = Date.now() - startMs;
-    const totalSeconds = Math.floor(elapsedMs / 1000);
+    if (rawValue === "unknown" || isNaN(rawValue)) {
+        el.textContent = "Unknown";
+    } else {
+        // Eftersom 't' redan är millisekunder (t.ex. 1781685982676), gör vi bara om strängen till ett tal direkt
+        const startMs = parseInt(rawValue, 10);
 
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+        // Räkna ut hur många millisekunder som har gått fram tills NU
+        const elapsedMs = Date.now() - startMs;
 
-    el.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
+        // Gör om till sekunder (och använd Math.abs ifall klockan skulle diffa med någon millisekund)
+        const totalSeconds = Math.floor(Math.abs(elapsedMs) / 1000);
+
+        // Räkna ut minuter och sekunder
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        // Skriv ut det snyggt (t.ex. 4:05)
+        el.textContent = `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
 </script>
