@@ -8,7 +8,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Room 5 - Space Invaders</title>
+    <title>Rum 5 - Space Invaders</title>
 
     <style>
             html,
@@ -90,6 +90,27 @@
             body {
                 touch-action: none;
             }
+
+            .mobile-controls {
+                display: none;
+            }
+
+            @@media (max-width: 900px) {
+
+                .desktop-controls {
+                    display: none;
+                }
+
+                .mobile-controls {
+                    display: block;
+                    font-size: 12px;
+                    color: #888;
+                }
+
+                #hud {
+                    font-size: 15px;
+                }
+            }
     </style>
 </head>
 
@@ -98,25 +119,30 @@
     <div id="game-container">
         <div id="hud">
             <div id="controlsInfo" class="controls-info">
-                <strong>Controls:</strong> A/D = Move | SPACE = Shoot
+                <strong>Kontroller:</strong> A/D = Flytta | SPACE = Skjut
             </div>
-            <div>Time: <span id="timer">05:00</span></div>
-            <div>Score: <span id="score">0</span></div>
+
+            <div id="mobileControlsInfo" class="controls-info mobile-controls">
+                <strong>Touch:</strong> Dra fingret för att styra | Automatisk skjutning
+            </div>
+
+            <div>Tid: <span id="timer">05:00</span></div>
+            <div>Poäng: <span id="score">0</span></div>
         </div>
 
         <canvas id="gameCanvas" width="1000" height="650"></canvas>
     </div>
 
     <div id="overlay">
-        <h1>Room 5 - Space Invaders</h1>
-        <p>Destroy all alien ships to escape.</p>
+        <h1>Rum 5 - Space Invaders</h1>
+        <p>Förstör alla utomjordiska skepp för att fly.</p>
 
         <div id="mobileInstructions" style="display:none;">
             <h3>Mobilkontroller</h3>
             <p>Dra fingret över skärmen för att styra skeppet. Det skjuter automatiskt.</p>
         </div>
 
-        <button id="startButton">Start Game</button>
+        <button id="startButton">Starta spelet</button>
     </div>
 
     <script>
@@ -142,15 +168,45 @@
                 y: 590,
                 width: 50,
                 height: 20,
-                speed: 7
+                speed: 700
             };
 
             const bullets = [];
             const enemies = [];
             const enemyBullets = [];
 
+            const enemySpeed = 30;
+            const bulletVelocity = 600;
+            const enemyFireRate = 1.5;
             let enemyDirection = 1;
             let lastShot = 0;
+
+            let lastFrameTime = performance.now();
+
+            function resizeCanvas() {
+                const width = Math.min(window.innerWidth, 1000);
+
+                canvas.style.width = width + "px";
+                canvas.style.height = (width * 650 / 1000) + "px";
+            }
+
+            resizeCanvas();
+            window.addEventListener("resize", resizeCanvas);
+
+            function gameLoop(currentTime) {
+
+                if (!gameRunning) return;
+
+                const deltaTime =
+                    (currentTime - lastFrameTime) / 1000;
+
+                lastFrameTime = currentTime;
+
+                update(deltaTime);
+                draw();
+
+                requestAnimationFrame(gameLoop);
+            }
 
             function createWave() {
                 enemies.length = 0;
@@ -180,12 +236,6 @@
 
             if (isTouchDevice) {
                 document.getElementById("mobileInstructions").style.display = "block";
-
-                if (window.innerWidth <= 900) {
-                    const ctrlInfo = document.getElementById("controlsInfo");
-                    if (ctrlInfo) ctrlInfo.style.display = "none";
-                    document.getElementById("hud").style.fontSize = "15px";
-                }
             }
 
             canvas.addEventListener("touchmove", e => {
@@ -244,12 +294,12 @@
                 requestAnimationFrame(gameLoop);
             });
 
-            function update() {
+            function update(deltaTime) {
                 if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
-                    player.x -= player.speed;
+                    player.x -= player.speed * deltaTime;
                 }
                 if (keys["ArrowRight"] || keys["d"] || keys["D"]) {
-                    player.x += player.speed;
+                    player.x += player.speed * deltaTime;
                 }
 
                 player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
@@ -259,23 +309,30 @@
                     lastShot = Date.now();
                 }
 
-                bullets.forEach(b => b.y -= 10);
+                bullets.forEach(b => b.y -= bulletVelocity * deltaTime);
                 let moveDown = false;
 
                 enemies.forEach(enemy => {
                     if (!enemy.alive) return;
-                    enemy.x += enemyDirection;
+                    enemy.x += enemyDirection * deltaTime * enemySpeed;
                     if (enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
                         moveDown = true;
                     }
                 });
 
+                const enemyDropDistance =
+                    window.innerWidth <= 900
+                        ? 8
+                        : 20;
+
                 if (moveDown) {
                     enemyDirection *= -1;
-                    enemies.forEach(enemy => { enemy.y += 20; });
+                    enemies.forEach(enemy => {
+                        enemy.y += enemyDropDistance;
+                    });
                 }
 
-                if (Math.random() < 0.025) {
+                if (Math.random() < enemyFireRate * deltaTime) {
                     const aliveEnemies = enemies.filter(e => e.alive);
                     if (aliveEnemies.length > 0) {
                         const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
@@ -288,7 +345,7 @@
                     }
                 }
 
-                enemyBullets.forEach(b => b.y += 5);
+                enemyBullets.forEach(b => b.y += bulletVelocity * deltaTime);
 
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     for (let j = 0; j < enemies.length; j++) {
@@ -339,18 +396,11 @@
                 });
             }
 
-            function gameLoop() {
-                if (!gameRunning) return;
-                update();
-                draw();
-                requestAnimationFrame(gameLoop);
-            }
-
             function gameOver() {
                 gameRunning = false;
                 gameOverState = true;
                 const overlay = document.getElementById("overlay");
-                overlay.innerHTML = "<h1>Game Over</h1><p>Tryck på skärmen eller R för att starta om</p><button onclick='restartGame()'>Retry</button>";
+                overlay.innerHTML = "<h1>Spelet är slut</h1><p>Tryck på skärmen eller R för att starta om</p><button onclick='restartGame()'>Försök igen</button>";
                 overlay.style.display = "flex";
             }
 

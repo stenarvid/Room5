@@ -15,19 +15,19 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-app.Use(async (context, next) =>
-{
-    var allowedReferrer = new Uri("http://escape-room-4.runasp.net/");
+// app.Use(async (context, next) =>
+// {
+//     var allowedReferrer = new Uri("http://escape-room-4.runasp.net/");
 
-    if (!context.Request.Headers.TryGetValue("Referer", out var refererValue) ||
-        !Uri.TryCreate(refererValue.ToString(), UriKind.Absolute, out var refererUri) ||
-        refererUri.Host != allowedReferrer.Host)
-    {
-        context.Response.Redirect("http://room1.runasp.net/");
-        return;
-    }
-    await next();
-});
+//     if (!context.Request.Headers.TryGetValue("Referer", out var refererValue) ||
+//         !Uri.TryCreate(refererValue.ToString(), UriKind.Absolute, out var refererUri) ||
+//         refererUri.Host != allowedReferrer.Host)
+//     {
+//         context.Response.Redirect("http://room1.runasp.net/");
+//         return;
+//     }
+//     await next();
+// });
 
 app.UseAuthorization();
 
