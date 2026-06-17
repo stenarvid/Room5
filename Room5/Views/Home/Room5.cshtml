@@ -185,6 +185,11 @@
 
             createWave();
 
+            // En gemensam funktion för att starta om och rensa bort gamla parametrar
+            function restartGame() {
+                window.location.href = window.location.pathname; // Laddar om sidan UTAN "?t=..." i URL:en
+            }
+
             // Tangentbordslyssnare
             document.addEventListener("keydown", e => { keys[e.key] = true; });
             document.addEventListener("keyup", e => { keys[e.key] = false; });
@@ -195,8 +200,9 @@
                 document.getElementById("mobileInstructions").style.display = "block";
             }
 
-            // Dra fingret på skärmen för att styra skeppet (och starta auto-skjut)
+            // Dra fingret på skärmen för att styra skeppet (och starta auto-skjut endast om spelet körs)
             canvas.addEventListener("touchmove", e => {
+                if (!gameRunning) return;
                 autoShoot = true;
                 const rect = canvas.getBoundingClientRect();
                 const touchX = e.touches[0].clientX - rect.left;
@@ -208,12 +214,13 @@
             // Starta om med R eller genom att klicka på skärmen vid Game Over
             document.addEventListener("keydown", function (e) {
                 if (!gameRunning && (e.key === "r" || e.key === "R")) {
-                    location.reload();
+                    restartGame();
                 }
             });
+
             document.addEventListener("touchstart", function () {
                 if (gameOverState) {
-                    location.reload();
+                    restartGame();
                 }
             });
 
@@ -243,6 +250,9 @@
 
                 // FIX: Hämtar nu tiden stabilt och direkt från den lokala strängen 't'
                 startTimestamp = parseInt(t, 10);
+
+                // Säkra att autoShoot inte tjuvstartar innan spelet dras igång aktivt
+                autoShoot = false;
 
                 document.getElementById("overlay").style.display = "none";
                 gameRunning = true;
@@ -351,30 +361,12 @@
                 requestAnimationFrame(gameLoop);
             }
 
-            // Starta om med R eller genom att klicka på skärmen vid Game Over
-            document.addEventListener("keydown", function (e) {
-                if (!gameRunning && (e.key === "r" || e.key === "R")) {
-                    restartGame();
-                }
-            });
-
-            document.addEventListener("touchstart", function () {
-                if (gameOverState) {
-                    restartGame();
-                }
-            });
-
-            // En gemensam funktion för att starta om och rensa bort gamla parametrar
-            function restartGame() {
-                window.location.href = window.location.pathname; // Laddar om sidan UTAN "?t=..." i URL:en
-            }
-
             function gameOver() {
                 gameRunning = false;
                 gameOverState = true;
                 const overlay = document.getElementById("overlay");
 
-                // Ändrade onclick från 'location.reload()' till vår nya 'restartGame()'
+                // Använder restartGame() stabilt här nu
                 overlay.innerHTML = "<h1>Game Over</h1><p>Tryck på skärmen eller R för att starta om</p><button onclick='restartGame()'>Retry</button>";
                 overlay.style.display = "flex";
             }
