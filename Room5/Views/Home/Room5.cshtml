@@ -401,7 +401,9 @@
                     if (enemy.alive && enemy.y + enemy.height >= player.y) { gameOver(); }
                 });
 
-                if (enemies.every(e => !e.alive)) { victory(); }
+                if (enemies.length > 0 && enemies.every(e => !e.alive)) {
+                    victory();
+                }
 
                 const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
                 const remaining = 300 - elapsed;
