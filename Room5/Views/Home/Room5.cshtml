@@ -148,7 +148,6 @@
             let score = 0;
             let startTimestamp = 0;
 
-            // Sätts till true när spelaren börjar dra fingret på skärmen (auto-skjut på mobil)
             let autoShoot = false;
 
             const keys = {};
@@ -185,12 +184,10 @@
 
             createWave();
 
-            // En gemensam funktion för att starta om och rensa bort gamla parametrar
             function restartGame() {
-                window.location.href = window.location.pathname; // Laddar om sidan UTAN "?t=..." i URL:en
+                window.location.href = window.location.pathname;
             }
 
-            // Tangentbordslyssnare
             document.addEventListener("keydown", e => { keys[e.key] = true; });
             document.addEventListener("keyup", e => { keys[e.key] = false; });
 
@@ -200,7 +197,6 @@
                 document.getElementById("mobileInstructions").style.display = "block";
             }
 
-            // Dra fingret på skärmen för att styra skeppet (och starta auto-skjut endast om spelet körs)
             canvas.addEventListener("touchmove", e => {
                 if (!gameRunning) return;
                 autoShoot = true;
@@ -211,7 +207,6 @@
                 e.preventDefault();
             }, { passive: false });
 
-            // Starta om med R eller genom att klicka på skärmen vid Game Over
             document.addEventListener("keydown", function (e) {
                 if (!gameRunning && (e.key === "r" || e.key === "R")) {
                     restartGame();
@@ -248,10 +243,7 @@
                     history.replaceState({}, "", window.location.pathname + "?t=" + t);
                 }
 
-                // FIX: Hämtar nu tiden stabilt och direkt från den lokala strängen 't'
                 startTimestamp = parseInt(t, 10);
-
-                // Säkra att autoShoot inte tjuvstartar innan spelet dras igång aktivt
                 autoShoot = false;
 
                 document.getElementById("overlay").style.display = "none";
@@ -269,7 +261,6 @@
 
                 player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
 
-                // Skjut med mellanslag, eller automatiskt när spelaren börjat röra skeppet på mobil
                 if ((keys[" "] || autoShoot) && Date.now() - lastShot > 250) {
                     shoot();
                     lastShot = Date.now();
@@ -306,16 +297,18 @@
 
                 enemyBullets.forEach(b => b.y += 5);
 
-                bullets.forEach((bullet, index) => {
-                    enemies.forEach(enemy => {
-                        if (enemy.alive && collide(bullet, enemy)) {
-                            enemy.alive = false;
-                            bullets.splice(index, 1);
+                // FIX: Säker kollisionshantering som stoppar loopen så fort ett skott träffar
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    for (let j = 0; j < enemies.length; j++) {
+                        if (enemies[j].alive && collide(bullets[i], enemies[j])) {
+                            enemies[j].alive = false;
+                            bullets.splice(i, 1);
                             score += 10;
                             scoreText.textContent = score;
+                            break; // Avbryt inre loopen, detta skott är förbrukat!
                         }
-                    });
-                });
+                    }
+                }
 
                 enemyBullets.forEach(bullet => {
                     if (collide(bullet, player)) { gameOver(); }
@@ -365,8 +358,6 @@
                 gameRunning = false;
                 gameOverState = true;
                 const overlay = document.getElementById("overlay");
-
-                // Använder restartGame() stabilt här nu
                 overlay.innerHTML = "<h1>Game Over</h1><p>Tryck på skärmen eller R för att starta om</p><button onclick='restartGame()'>Retry</button>";
                 overlay.style.display = "flex";
             }
