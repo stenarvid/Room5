@@ -55,6 +55,44 @@
             h1 {
                 margin-bottom: 20px;
             }
+
+            #mobileControls {
+                display: none;
+                position: fixed;
+                bottom: 20px;
+                width: 100%;
+                justify-content: center;
+                gap: 20px;
+                z-index: 200;
+            }
+
+            #mobileControls button {
+                width: 80px;
+                height: 80px;
+                font-size: 30px;
+                border-radius: 50%;
+                border: none;
+            }
+
+            body {
+                touch-action: none;
+            }
+
+            @@media (max-width: 900px) {
+                canvas {
+                    width: 100vw;
+                    height: auto;
+                    border: none;
+                }
+
+                #hud {
+                    font-size: 16px;
+                }
+
+                #mobileControls {
+                    display: flex;
+                }
+            }
     </style>
 </head>
 
@@ -80,6 +118,12 @@
 
     <canvas id="gameCanvas" width="1000" height="650"></canvas>
 
+    <div id="mobileControls">
+        <button id="leftBtn">◀</button>
+        <button id="shootBtn">🔥</button>
+        <button id="rightBtn">▶</button>
+    </div>
+
     <div id="overlay">
         <h1>Room 5 - Space Invaders</h1>
 
@@ -96,6 +140,17 @@
             <li>SPACE = Shoot</li>
             <li>R = Restart after Game Over</li>
         </ul>
+
+        <div id="mobileInstructions" style="display:none;">
+            <h3>Phone Controls</h3>
+
+            <ul style="text-align:left;">
+                <li>◀ = Move Left</li>
+                <li>▶ = Move Right</li>
+                <li>🔥 = Shoot</li>
+                <li>Drag finger on screen to move</li>
+            </ul>
+        </div>
 
         <p>
             Eliminate every enemy to complete Room 5.
@@ -165,6 +220,78 @@
             document.addEventListener("keyup", e => {
                 keys[e.key] = false;
             });
+
+            const leftBtn = document.getElementById("leftBtn");
+            const rightBtn = document.getElementById("rightBtn");
+            const shootBtn = document.getElementById("shootBtn");
+
+            const isTouchDevice =
+                ('ontouchstart' in window) ||
+                (navigator.maxTouchPoints > 0);
+
+            if (isTouchDevice) {
+
+                const mobileInstructions =
+                    document.getElementById("mobileInstructions");
+
+                if (mobileInstructions) {
+                    mobileInstructions.style.display = "block";
+                }
+
+                const controls =
+                    document.getElementById("mobileControls");
+
+                if (controls) {
+                    controls.style.display = "flex";
+                }
+            }
+
+            function bindHold(button, key) {
+                button.addEventListener("touchstart", e => {
+                    e.preventDefault();
+                    keys[key] = true;
+                });
+
+                button.addEventListener("touchend", e => {
+                    e.preventDefault();
+                    keys[key] = false;
+                });
+
+                button.addEventListener("touchcancel", e => {
+                    e.preventDefault();
+                    keys[key] = false;
+                });
+            }
+
+            bindHold(leftBtn, "ArrowLeft");
+            bindHold(rightBtn, "ArrowRight");
+
+            shootBtn.addEventListener("touchstart", e => {
+                e.preventDefault();
+
+                if (Date.now() - lastShot > 250) {
+                    shoot();
+                    lastShot = Date.now();
+                }
+            });
+
+            canvas.addEventListener("touchmove", e => {
+                const rect = canvas.getBoundingClientRect();
+
+                const touchX = e.touches[0].clientX - rect.left;
+
+                player.x =
+                    (touchX / rect.width) * canvas.width -
+                    player.width / 2;
+
+                player.x = Math.max(
+                    0,
+                    Math.min(canvas.width - player.width, player.x)
+                );
+
+                e.preventDefault();
+            }, { passive: false });
+
 
             // Press R to restart after Game Over
             document.addEventListener("keydown", function (e) {
