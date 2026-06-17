@@ -15,30 +15,30 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path.Value ?? "";
+// app.Use(async (context, next) =>
+// {
+//     var path = context.Request.Path.Value ?? "";
 
-    if (path.StartsWith("/_blazor") ||
-        path.StartsWith("/_framework") ||
-        path.Contains("."))
-    {
-        await next();
-        return;
-    }
+//     if (path.StartsWith("/_blazor") ||
+//         path.StartsWith("/_framework") ||
+//         path.Contains("."))
+//     {
+//         await next();
+//         return;
+//     }
 
-    var allowedReferrer = new Uri("http://escape-room-4.runasp.net");
+//     var allowedReferrer = new Uri("http://escape-room-4.runasp.net");
 
-    if (!context.Request.Headers.TryGetValue("Referer", out var refererValue) ||
-        !Uri.TryCreate(refererValue.ToString(), UriKind.Absolute, out var refererUri) ||
-        refererUri.Host != allowedReferrer.Host)
-    {
-        context.Response.Redirect("http://room1.runasp.net/");
-        return;
-    }
+//     if (!context.Request.Headers.TryGetValue("Referer", out var refererValue) ||
+//         !Uri.TryCreate(refererValue.ToString(), UriKind.Absolute, out var refererUri) ||
+//         refererUri.Host != allowedReferrer.Host)
+//     {
+//         context.Response.Redirect("http://room1.runasp.net/");
+//         return;
+//     }
 
-    await next();
-});
+//     await next();
+// });
 
 app.UseAuthorization();
 
