@@ -59,6 +59,10 @@
                 color: #888;
             }
 
+            .mobile-controls {
+                display: none;
+            }
+
             #overlay {
                 position: fixed;
                 inset: 0;
@@ -90,27 +94,6 @@
             body {
                 touch-action: none;
             }
-
-            .mobile-controls {
-                display: none;
-            }
-
-            @@media (max-width: 900px) {
-
-                .desktop-controls {
-                    display: none;
-                }
-
-                .mobile-controls {
-                    display: block;
-                    font-size: 12px;
-                    color: #888;
-                }
-
-                #hud {
-                    font-size: 15px;
-                }
-            }
     </style>
 </head>
 
@@ -118,7 +101,7 @@
 
     <div id="game-container">
         <div id="hud">
-            <div id="controlsInfo" class="controls-info">
+            <div id="controlsInfo" class="controls-info desktop-controls">
                 <strong>Kontroller:</strong> A/D = Flytta | SPACE = Skjut
             </div>
 
@@ -175,9 +158,9 @@
             const enemies = [];
             const enemyBullets = [];
 
-            const enemySpeed = 30;
+            const enemySpeed = 40;
             const bulletVelocity = 600;
-            const enemyFireRate = 1.5;
+            const enemyFireRate = 0.5;
             let enemyDirection = 1;
             let lastShot = 0;
 
@@ -185,24 +168,27 @@
 
             function resizeCanvas() {
                 const width = Math.min(window.innerWidth, 1000);
-
                 canvas.style.width = width + "px";
                 canvas.style.height = (width * 650 / 1000) + "px";
+
+                const isMobile = window.innerWidth <= 900;
+                document.getElementById("controlsInfo").style.display = isMobile ? "none" : "block";
+                document.getElementById("mobileControlsInfo").style.display = isMobile ? "block" : "none";
+                document.getElementById("hud").style.fontSize = isMobile ? "15px" : "18px";
             }
 
             resizeCanvas();
             window.addEventListener("resize", resizeCanvas);
 
             function gameLoop(currentTime) {
-
                 if (!gameRunning) return;
 
-                const deltaTime =
-                    (currentTime - lastFrameTime) / 1000;
-
+                const deltaTime = (currentTime - lastFrameTime) / 1000;
                 lastFrameTime = currentTime;
 
-                update(deltaTime);
+                const safeDelta = Math.min(deltaTime, 0.1);
+
+                update(safeDelta);
                 draw();
 
                 requestAnimationFrame(gameLoop);
@@ -225,8 +211,9 @@
 
             createWave();
 
+            // FIX: Behåller nuvarande URL-parametrar (inklusive ?t=...) vid omstart
             function restartGame() {
-                window.location.href = window.location.pathname;
+                window.location.href = window.location.pathname + window.location.search;
             }
 
             document.addEventListener("keydown", e => { keys[e.key] = true; });
@@ -243,6 +230,7 @@
                 autoShoot = true;
                 const rect = canvas.getBoundingClientRect();
                 const touchX = e.touches[0].clientX - rect.left;
+
                 player.x = (touchX / rect.width) * canvas.width - player.width / 2;
                 player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
                 e.preventDefault();
@@ -291,6 +279,7 @@
 
                 document.getElementById("overlay").style.display = "none";
                 gameRunning = true;
+                lastFrameTime = performance.now();
                 requestAnimationFrame(gameLoop);
             });
 
@@ -309,26 +298,31 @@
                     lastShot = Date.now();
                 }
 
-                bullets.forEach(b => b.y -= bulletVelocity * deltaTime);
-                let moveDown = false;
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    bullets[i].y -= bulletVelocity * deltaTime;
+                    if (bullets[i].y < 0) {
+                        bullets.splice(i, 1);
+                    }
+                }
 
+                let hitWall = false;
                 enemies.forEach(enemy => {
                     if (!enemy.alive) return;
                     enemy.x += enemyDirection * deltaTime * enemySpeed;
-                    if (enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
-                        moveDown = true;
+
+                    if (enemy.x <= 0 || enemy.x + enemy.width >= canvas.width) {
+                        hitWall = true;
                     }
                 });
 
-                const enemyDropDistance =
-                    window.innerWidth <= 900
-                        ? 8
-                        : 20;
-
-                if (moveDown) {
+                if (hitWall) {
                     enemyDirection *= -1;
+                    const enemyDropDistance = window.innerWidth <= 900 ? 10 : 20;
                     enemies.forEach(enemy => {
-                        enemy.y += enemyDropDistance;
+                        if (enemy.alive) {
+                            enemy.x += enemyDirection * 2;
+                            enemy.y += enemyDropDistance;
+                        }
                     });
                 }
 
@@ -337,15 +331,20 @@
                     if (aliveEnemies.length > 0) {
                         const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
                         enemyBullets.push({
-                            x: shooter.x + 18,
-                            y: shooter.y + 20,
+                            x: shooter.x + shooter.width / 2 - 2,
+                            y: shooter.y + shooter.height,
                             width: 4,
                             height: 10
                         });
                     }
                 }
 
-                enemyBullets.forEach(b => b.y += bulletVelocity * deltaTime);
+                for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                    enemyBullets[i].y += (bulletVelocity * 0.6) * deltaTime;
+                    if (enemyBullets[i].y > canvas.height) {
+                        enemyBullets.splice(i, 1);
+                    }
+                }
 
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     for (let j = 0; j < enemies.length; j++) {
@@ -383,12 +382,16 @@
 
             function draw() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+
                 ctx.fillStyle = "lime";
                 ctx.fillRect(player.x, player.y, player.width, player.height);
+
                 ctx.fillStyle = "white";
                 bullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
+
                 ctx.fillStyle = "red";
                 enemyBullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
+
                 ctx.fillStyle = "cyan";
                 enemies.forEach(enemy => {
                     if (!enemy.alive) return;
