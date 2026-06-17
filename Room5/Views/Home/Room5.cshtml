@@ -259,7 +259,6 @@
                 document.getElementById("mobileControls").style.display = "flex";
             }
 
-            // FIX: Ändrade till gement "a" och "d" i kopplingarna så att de matchar update()-funktionen!
             function bindHold(button, key) {
                 button.addEventListener("touchstart", e => {
                     e.preventDefault();
@@ -324,19 +323,22 @@
             }
 
             document.getElementById("startButton").addEventListener("click", function () {
-                var t = new URLSearchParams(window.location.search).get("t");
+                let t = new URLSearchParams(window.location.search).get("t");
+
                 if (!t) {
-                    t = Date.now();
+                    t = Date.now().toString();
                     history.replaceState({}, "", window.location.pathname + "?t=" + t);
                 }
-                startTimestamp = parseInt(t);
+
+                // FIX: Hämtar nu tiden stabilt och direkt från den lokala strängen 't'
+                startTimestamp = parseInt(t, 10);
+
                 document.getElementById("overlay").style.display = "none";
                 gameRunning = true;
                 requestAnimationFrame(gameLoop);
             });
 
             function update() {
-                // Läser nu av 'a' och 'd' korrekt från både touch och tangentbord
                 if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
                     player.x -= player.speed;
                 }
@@ -437,11 +439,31 @@
                 requestAnimationFrame(gameLoop);
             }
 
+            // Starta om med R eller genom att klicka på skärmen vid Game Over
+            document.addEventListener("keydown", function (e) {
+                if (!gameRunning && (e.key === "r" || e.key === "R")) {
+                    restartGame();
+                }
+            });
+
+            document.addEventListener("touchstart", function () {
+                if (gameOverState) {
+                    restartGame();
+                }
+            });
+
+            // En gemensam funktion för att starta om och rensa bort gamla parametrar
+            function restartGame() {
+                window.location.href = window.location.pathname; // Laddar om sidan UTAN "?t=..." i URL:en
+            }
+
             function gameOver() {
                 gameRunning = false;
                 gameOverState = true;
                 const overlay = document.getElementById("overlay");
-                overlay.innerHTML = "<h1>Game Over</h1><p>Tryck på skärmen för att starta om</p><button onclick='location.reload()'>Retry</button>";
+
+                // Ändrade onclick från 'location.reload()' till vår nya 'restartGame()'
+                overlay.innerHTML = "<h1>Game Over</h1><p>Tryck på skärmen eller R för att starta om</p><button onclick='restartGame()'>Retry</button>";
                 overlay.style.display = "flex";
             }
 
